@@ -2,6 +2,7 @@ const searchInput = document.querySelector(`.search-text`)
 const searchResult = document.querySelector(`main.search.container`)
 const watchlist = document.querySelector(`main.watchlist.container`)
 const searchBtn = document.querySelector(`.search-btn`)
+const baseURL = `https://www.omdbapi.com/?apikey=9ebca557`
 const cardFallbackCover = `<svg class="card-fallback-cover" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 192">
                                 <g>
                                 <path d="M89.3,52.3c7.6,0,13.7-6.1,13.7-13.7s-6.1-13.7-13.7-13.7S75.6,31,75.6,38.6S81.7,52.3,89.3,52.3z"/>
@@ -81,7 +82,7 @@ async function initialLoad() {
     filmsID = []
     // wrapping if statement to prevent redundant search operations if searchInput hasn't changed
     if(currentInput != prevInput) {
-        const res = await fetch(`https://www.omdbapi.com/?apikey=9ebca557&page=1&s=${currentInput}`)
+        const res = await fetch(`${baseURL}&page=1&s=${currentInput}`)
         const data = res.ok ? await res.json() : new Error('Something went wrong')
         const totalResults = parseInt(data.totalResults)
         currentPage = 1
@@ -104,7 +105,7 @@ function loadMore() {
         loadMoreBtn.outerHTML = ``
         searchResult.innerHTML += syncLoadAnimation
         currentPage++
-        const res = await fetch(`https://www.omdbapi.com/?apikey=9ebca557&page=${currentPage}&s=${searchInput.value.replace(/\s+/g, '+')}`)
+        const res = await fetch(`${baseURL}&page=${currentPage}&s=${searchInput.value.replace(/\s+/g, '+')}`)
         const data = await res.json()
         searchResult.innerHTML += `<hr>${await getFilmCardsHTML(data.Search)}`
         searchResult.removeChild(searchResult.querySelector(`.sync-load-animation`))
@@ -118,7 +119,7 @@ async function getFilmCardsHTML(filmsArr) {
     for (let index = 0; index < filmsArr.length; index++) {
         const film = filmsArr[index]
         const filmID = film.imdbID
-        const res = await fetch(`https://www.omdbapi.com/?apikey=9ebca557&i=${filmID}`)
+        const res = await fetch(`${baseURL}&i=${filmID}`)
         const data = await res.json()
         filmsID.push(filmID)
         const posterAvailable = data.Poster != "N/A" ? true : false
