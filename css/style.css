@@ -5,6 +5,7 @@
 /* =========================
     variables
 ============================ */
+
 :root {
     --bg: #fff;
     --clr: #6B7280;
@@ -64,7 +65,7 @@ body {
     font-size: .875rem;
     background-color: var(--bg);
     color: var(--clr);
-    line-height: 1.4;
+    line-height: 1.6;
 }
 
 .container {
@@ -194,14 +195,10 @@ footer a {
     height: 3rem;
 }
 
-.search-text,
-.footer p {
+.search-text {
     border: 1px solid var(--search-border);
     color: var(--clr);
     background: var(--search-bar-bg);
-}
-
-.search-text {
     width: inherit;
     padding: 1rem 9rem 1rem 3rem;
     flex-grow: 5;
@@ -257,6 +254,11 @@ main {
     color: var(--faded);
 }
 
+.placeholder-img {
+    width: 70px;
+    margin-bottom: .5em;
+}
+
 .placeholder-anchor {
     font-size: 1rem;
     font-weight: 700;
@@ -272,11 +274,6 @@ main {
     fill: var(--faded);
 }
 
-.placeholder-img {
-    width: 70px;
-    margin-bottom: .5em;
-}
-
 /* =========================
     film card
 ============================ */
@@ -285,7 +282,7 @@ main {
     display: grid;
     grid-template-columns: 8rem auto;
     grid-template-rows: max-content max-content 1fr;
-    grid-row-gap: .4rem;
+    grid-row-gap: .5rem;
     grid-column-gap: 1rem;
     grid-template-areas: "poster title"
                          "poster info"
@@ -309,7 +306,8 @@ main {
     grid-template-areas: "runtime genre watchlist";
 }
 
-.card-cover, .card-fallback-cover {
+.card-cover,
+.card-fallback-cover {
     grid-area: poster;
     width: 100%;
 }
@@ -481,7 +479,7 @@ footer .container {
     border-radius: 6px 6px 0 0;
 }
 
-footer a {
+.footer a {
     text-decoration: none;
     color: inherit;
 }
@@ -562,7 +560,7 @@ footer .container p:first-child {
     }
 
     .card-group-info {
-        grid-row-gap: .4rem;
+        grid-row-gap: .5rem;
         grid-template-areas: "runtime"
                              "genre"
                              "watchlist";
@@ -572,7 +570,6 @@ footer .container p:first-child {
         justify-self: start;
     }
 }
-
 
 
 /* =========================
@@ -628,8 +625,7 @@ footer .container :is(p, a) {
     height: 1.25rem;
     margin-top: 1.75rem;
     margin-left: 0;
-    -webkit-animation: anime1 4s 0s forwards ease-in-out infinite;
-            animation: anime1 4s 0s forwards ease-in-out infinite;
+    animation: anime1 4s 0s forwards ease-in-out infinite;
 }
 
 .sync-load-animation :is(.box2, .box3) {
@@ -640,14 +636,12 @@ footer .container :is(p, a) {
 
 .sync-load-animation .box2 {
     margin-left: 0;
-    -webkit-animation: anime2 4s 0s forwards ease-in-out infinite;
-            animation: anime2 4s 0s forwards ease-in-out infinite;
+    animation: anime2 4s 0s forwards ease-in-out infinite;
 }
 
 .sync-load-animation .box3 {
     margin-left: 1.75rem;
-    -webkit-animation: anime3 4s 0s forwards ease-in-out infinite;
-            animation: anime3 4s 0s forwards ease-in-out infinite;
+    animation: anime3 4s 0s forwards ease-in-out infinite;
 }
 
 

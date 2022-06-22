@@ -2,7 +2,8 @@ const searchInput = document.querySelector(`.search-text`)
 const searchResult = document.querySelector(`main.search.container`)
 const watchlist = document.querySelector(`main.watchlist.container`)
 const searchBtn = document.querySelector(`.search-btn`)
-const baseURL = `https://www.omdbapi.com/?apikey=9ebca557`
+const path = `https://www.omdbapi.com/?apikey=9ebca557`
+const pageIdentifier = document.URL.includes(`index.html`) ? `search` : `watchlist`
 const cardFallbackCover = `<svg class="card-fallback-cover" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 192">
                                 <g>
                                 <path d="M89.3,52.3c7.6,0,13.7-6.1,13.7-13.7s-6.1-13.7-13.7-13.7S75.6,31,75.6,38.6S81.7,52.3,89.3,52.3z"/>
@@ -15,7 +16,7 @@ const syncLoadAnimation = `<div class="sync-load-animation">
                                 <div class="box1"></div>
                                 <div class="box2"></div>
                                 <div class="box3"></div>
-                           </div>`
+                           </div>  <!-- end of sync-load-animation -->`
 const searchResultPlaceholder = `<div class="results-placeholder">
                                     <svg class="placeholder-img" viewBox="0 0 70 62" xmlns="http://www.w3.org/2000/svg">
                                         <path fill-rule="evenodd" clip-rule="evenodd" d="M8.75 0C3.91751 0 0 3.9175 0 8.75V52.5C0 57.3325 3.91751 61.25 8.75 61.25H61.25C66.0825 61.25 70 57.3325 70 52.5V8.75C70 3.9175 66.0825 0 61.25 0H8.75ZM21.875 8.75H48.125V26.25H21.875V8.75ZM56.875 43.75V52.5H61.25V43.75H56.875ZM48.125 35H21.875V52.5H48.125V35ZM56.875 35H61.25V26.25H56.875V35ZM61.25 17.5V8.75H56.875V17.5H61.25ZM13.125 8.75V17.5H8.75V8.75H13.125ZM13.125 26.25H8.75V35H13.125V26.25ZM8.75 43.75H13.125V52.5H8.75V43.75Z" fill="currentColor"/>
@@ -27,8 +28,9 @@ const watchlistPlaceholder = `<div class="results-placeholder">
                                 <a class="placeholder-anchor" href="index.html">Let’s add some movies!</a>
                              </div>`
 const maxResultsPerFetchedPage = 10
+let storedFilmsCount = localStorage.getItem(`color-mode`) ? localStorage.length-1 : localStorage.length
 let pagesNumber, currentPage, filmCardsContent, currentInput,
-filmsID, prevInput, loadMoreBtn, moreToBeLoaded
+    filmsID, prevInput, loadMoreBtn, moreToBeLoaded
 
 // Default color mode
 let colorMode = localStorage.getItem(`color-mode`)
@@ -44,6 +46,25 @@ document.querySelector(`.color-mode-switch`).addEventListener(`click`, () => {
     localStorage.setItem(`color-mode`, colorMode)
 })
 
+/* for watchlist page */
+if(watchlist) {
+    if(storedFilmsCount) {
+        const length = localStorage.length
+        let html = ``
+        for (let index = 0;  index < length; index++) {
+            if (localStorage.key(index) != `color-mode`) {
+                html += localStorage.getItem(localStorage.key(index))
+                if (index < length-1) html += `<hr>`
+            }
+        }
+        watchlist.innerHTML = html
+        document.querySelectorAll(`.card-watchlist`).forEach(currentValue => {
+            currentValue.innerHTML = `Remove`
+        })
+    }
+}
+
+/* for search page */
 if(searchInput) {
     /* searchBtn click triggers fetch request by keyword, 10 results per page are returned if response Ok,
     each result prompts another fetch by id for film info,
@@ -56,33 +77,15 @@ if(searchInput) {
     })
 }
 
-if(watchlist) {
-    const storedFilmsCount = localStorage.getItem(`color-mode`) ? localStorage.length-1 : localStorage.length
-    if(storedFilmsCount) {
-        const length = localStorage.length
-        // watchlist.style.setProperty(`padding-top`, `2.5rem`)
-        let html = ``
-        for (let index = 0;  index < length; index++) {
-            if (localStorage.key(index) != `color-mode`) {
-                html += localStorage.getItem(localStorage.key(index))
-                if (index < length-1) html += `<hr>`
-            }
-        }
-        watchlist.innerHTML = html
-        document.querySelectorAll(`.card-watchlist`).forEach(currentValue => {
-            currentValue.innerHTML = `Remove`
-        })
-        addFilmCardsEventListeners(`watchlist`)
-    }
-}
 
+/* functions */
 async function initialLoad() {
     currentInput = searchInput.value.trim().toLowerCase().replace(/\s+/g, '+')
     moreToBeLoaded = false
     filmsID = []
-    // wrapping if statement to prevent redundant search operations if searchInput hasn't changed
+    // if statement to prevent redundant search operations if searchInput hasn't changed
     if(currentInput != prevInput) {
-        const res = await fetch(`${baseURL}&page=1&s=${currentInput}`)
+        const res = await fetch(`${path}&page=1&s=${currentInput}`)
         const data = res.ok ? await res.json() : new Error('Something went wrong')
         const totalResults = parseInt(data.totalResults)
         currentPage = 1
@@ -91,7 +94,6 @@ async function initialLoad() {
             pagesNumber = Math.ceil(totalResults/data.Search.length)
             searchResult.innerHTML = `<div class="results-placeholder">${syncLoadAnimation}</div>`
             searchResult.innerHTML = await getFilmCardsHTML(data.Search)
-            addFilmCardsEventListeners(`search`)
         }
         if (moreToBeLoaded) loadMore()
         prevInput = searchInput.value.trim().toLowerCase().replace(/\s+/g, '+')
@@ -105,11 +107,10 @@ function loadMore() {
         loadMoreBtn.outerHTML = ``
         searchResult.innerHTML += syncLoadAnimation
         currentPage++
-        const res = await fetch(`${baseURL}&page=${currentPage}&s=${searchInput.value.replace(/\s+/g, '+')}`)
+        const res = await fetch(`${path}&page=${currentPage}&s=${searchInput.value.replace(/\s+/g, '+')}`)
         const data = await res.json()
         searchResult.innerHTML += `<hr>${await getFilmCardsHTML(data.Search)}`
         searchResult.removeChild(searchResult.querySelector(`.sync-load-animation`))
-        addFilmCardsEventListeners(`search`)
         if (moreToBeLoaded) loadMore()
     })
 }
@@ -117,26 +118,25 @@ function loadMore() {
 async function getFilmCardsHTML(filmsArr) {
     let html = ``
     for (let index = 0; index < filmsArr.length; index++) {
-        const film = filmsArr[index]
-        const filmID = film.imdbID
-        const res = await fetch(`${baseURL}&i=${filmID}`)
+        const filmID = filmsArr[index].imdbID
+        const res = await fetch(`${path}&i=${filmID}`)
         const data = await res.json()
-        filmsID.push(filmID)
         const posterAvailable = data.Poster != "N/A" ? true : false
         const plot = clipPlotText(data.Plot)
+        filmsID.push(filmID)
         html += `
             <div class="film-card" id="${filmID}">
-                ${posterAvailable ? `<img class="card-cover" src=${data.Poster} alt="Film poster">` : cardFallbackCover}
+                ${posterAvailable ? `<img class="card-cover" src=${data.Poster} alt="${data.Title} film poster">` : cardFallbackCover}
                 <h2 class="card-title">
                     ${data.Title} <span class="card-rating">${data.Ratings.length ? data.Ratings[0].Value.slice(0, data.Ratings[0].Value.indexOf("/")) : "N/A"}</span>
                 </h2>
                 <div class="card-group-info">
                     <p class="card-runtime">${data.Runtime}</p>
                     <p class="card-genre">${data.Genre}</p>
-                    <button class="btn card-watchlist" add-state=${localStorage.getItem(filmID) ? "removable" : "addable"}>Watchlist</button>
+                    <button class="btn card-watchlist" onclick="watchlistAddToOrRemoveFrom(event)" add-state=${localStorage.getItem(filmID) ? "removable" : "addable"}>Watchlist</button>
                 </div>
                 <p class="card-plot">${plot}</p>
-            </div>
+            </div>  <!-- end of film-card -->
         `
         
         if (currentPage < pagesNumber && index === filmsArr.length-1) {
@@ -148,54 +148,53 @@ async function getFilmCardsHTML(filmsArr) {
     return html
 }
 
-function addFilmCardsEventListeners(key) {
-    // adding event listeners to read more/less plot remaining teext
-    document.querySelectorAll(`.card-plot-read-more`).forEach(currentValue => { // syntax: callback(currentValue, currentIndex, listObj), thisArg
-        const readLess = currentValue.parentNode.querySelector(`.card-plot-read-less`)
-        const remainingText = currentValue.parentNode.querySelector(`.card-plot-remaining-text`)
-        currentValue.addEventListener(`click`, () => {
-            remainingText.style.setProperty(`display`, `unset`)
-            readLess.style.setProperty(`display`, `unset`)
-            currentValue.style.setProperty(`display`, `none`)
-        })
-        readLess.addEventListener(`click`, () => {
-            remainingText.style.setProperty(`display`, `none`)
-            currentValue.style.setProperty(`display`, `unset`)
-            readLess.style.setProperty(`display`, `none`)
-        })
-    })
-
-    // adding event listeners to add/remove to watchlist
-    document.querySelectorAll(`.card-watchlist`).forEach((currentValue, currentIndex) => {
-        currentValue.addEventListener(`click`, () => {
-            const addState = currentValue.getAttribute(`add-state`)
-            const filmCard = currentValue.parentNode.parentNode
-            if (addState === `addable`) {
-                currentValue.setAttribute(`add-state`, `removable`)
-                localStorage.setItem(filmsID[currentIndex], filmCard.outerHTML.replace(/\\n\s+/g, ``))
-            } else {
-                currentValue.setAttribute(`add-state`, `addable`)
-                if (key === `search`) localStorage.removeItem(filmsID[currentIndex])
-                else {
-                    const nextHr = filmCard.nextElementSibling
-                    const prevHr = filmCard.previousElementSibling
-                    let bringPlaceholder
-                    // remove next hr element, if last card, then remove prev hr, if single card exists, no hrs exist, none removed
-                    nextHr ? nextHr.remove() : prevHr ? prevHr.remove() : bringPlaceholder = true
-                    localStorage.removeItem(filmCard.getAttribute(`id`))
-                    filmCard.outerHTML = ``
-                    if(bringPlaceholder) watchlist.innerHTML = watchlistPlaceholder
-                }
-            }
-        })
-    })
+function watchlistAddToOrRemoveFrom(event) {
+    const cardWatchlistBtn = event.target
+    const addState = cardWatchlistBtn.getAttribute(`add-state`)
+    const filmCard = cardWatchlistBtn.parentNode.parentNode
+    const id = filmCard.getAttribute(`id`)
+    if (addState === `addable`) {
+        cardWatchlistBtn.setAttribute(`add-state`, `removable`)
+        localStorage.setItem(id, filmCard.outerHTML.replace(/\\n\s+/g, ``)) //
+    } else {
+        cardWatchlistBtn.setAttribute(`add-state`, `addable`)
+        if (pageIdentifier === `search`) localStorage.removeItem(filmsID[id])
+        else {
+            const nextHr = filmCard.nextElementSibling
+            const prevHr = filmCard.previousElementSibling
+            let bringPlaceholder
+            // remove next hr element, if last card, then remove prev hr, if single card exists, no hrs exist, none removed
+            nextHr ? nextHr.remove() : prevHr ? prevHr.remove() : bringPlaceholder = true
+            localStorage.removeItem(filmCard.getAttribute(`id`))
+            filmCard.outerHTML = ``
+            if(bringPlaceholder) watchlist.innerHTML = watchlistPlaceholder
+        }
+    }
 }
 
 function clipPlotText(plot) {
     if (plot.length <= 130) return plot
     else return `${plot.slice(0, 130)}... 
-                    <button class="btn card-plot-read-more">Read more</button>
+                    <button class="btn card-plot-read-more" onclick="showRemainingPlotText(event)">Read more</button>
                     <span class="card-plot-remaining-text">${plot.slice(131)} </span>
-                    <button class="btn card-plot-read-less">Read less</button>
+                    <button class="btn card-plot-read-less" onclick="hideRemainingPlotText(event)">Read less</button>
                 `
+}
+
+function showRemainingPlotText(event) {
+    const readMore = event.target
+    const remainingText = readMore.nextElementSibling
+    const readLess = remainingText.nextElementSibling
+    remainingText.style.setProperty(`display`, `unset`)
+    readLess.style.setProperty(`display`, `unset`)
+    readMore.style.setProperty(`display`, `none`)
+}
+
+function hideRemainingPlotText(event) {
+    const readLess = event.target
+    const remainingText = readLess.previousElementSibling
+    const readMore = remainingText.previousElementSibling
+    remainingText.style.setProperty(`display`, `none`)
+    readMore.style.setProperty(`display`, `unset`)
+    readLess.style.setProperty(`display`, `none`)
 }
