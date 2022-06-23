@@ -2,7 +2,7 @@ const searchInput = document.querySelector(`.search-text`)
 const searchResult = document.querySelector(`main.search.container`)
 const watchlist = document.querySelector(`main.watchlist.container`)
 const searchBtn = document.querySelector(`.search-btn`)
-const path = `https://www.omdbapi.com/?apikey=9ebca557`
+const baseURL = `https://www.omdbapi.com/?apikey=9ebca557`
 const pageIdentifier = document.URL.includes(`index.html`) ? `search` : `watchlist`
 const cardFallbackCover = `<svg class="card-fallback-cover" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 192">
                                 <g>
