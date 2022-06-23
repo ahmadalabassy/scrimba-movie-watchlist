@@ -69,23 +69,20 @@ if(searchInput) {
     /* searchBtn click triggers fetch request by keyword, 10 results per page are returned if response Ok,
     each result prompts another fetch by id for film info,
     content added to searchResult */
-    searchBtn.addEventListener(`click`, initialLoad)
-    // Enter key fired on non-empty searchInput initiates click on searchBtn
+    searchBtn.addEventListener(`click`, () => initialLoad(searchInput.value.trim().toLowerCase().replace(/\s+/g, '+')))
+    // Enter key fired on non-empty searchInput values initiates click on searchBtn, or displays searchResultPlaceholder otherwise
     searchInput.addEventListener("keypress", event => {
-        if (event.key === "Enter" && searchInput.value.replace(/\s+/g, ``) != ``) searchBtn.click()
-        else if (event.key === "Enter" && searchInput.value.replace(/\s+/g, ``) === ``) searchResult.innerHTML = searchResultPlaceholder
+        if (event.key === "Enter") searchBtn.click()
     })
 }
 
-
 /* functions */
-async function initialLoad() {
-    currentInput = searchInput.value.trim().toLowerCase().replace(/\s+/g, '+')
+async function initialLoad(currentInput) {
     moreToBeLoaded = false
-    filmsID = []
-    // if statement to prevent redundant search operations if searchInput hasn't changed
-    if(currentInput != prevInput) {
-        const res = await fetch(`${path}&page=1&s=${currentInput}`)
+    // if statements to prevent redundant search operations if searchInput hasn't changed from prevInput, or if it's empty string
+    if (currentInput === ``) searchResult.innerHTML = searchResultPlaceholder
+    else if(currentInput != prevInput) {
+        const res = await fetch(`${baseURL}&page=1&s=${currentInput}`)
         const data = res.ok ? await res.json() : new Error('Something went wrong')
         const totalResults = parseInt(data.totalResults)
         currentPage = 1
@@ -93,7 +90,7 @@ async function initialLoad() {
         else {
             pagesNumber = Math.ceil(totalResults/data.Search.length)
             searchResult.innerHTML = `<div class="results-placeholder">${syncLoadAnimation}</div>`
-            searchResult.innerHTML = await getFilmCardsHTML(data.Search)
+            searchResult.innerHTML = await getFilmsCardsHTML(data.Search.map(search => fetch(`${baseURL}&i=${search.imdbID}`)))
         }
         if (moreToBeLoaded) loadMore()
         prevInput = searchInput.value.trim().toLowerCase().replace(/\s+/g, '+')
@@ -107,45 +104,45 @@ function loadMore() {
         loadMoreBtn.outerHTML = ``
         searchResult.innerHTML += syncLoadAnimation
         currentPage++
-        const res = await fetch(`${path}&page=${currentPage}&s=${searchInput.value.replace(/\s+/g, '+')}`)
+        const res = await fetch(`${baseURL}&page=${currentPage}&s=${searchInput.value.replace(/\s+/g, '+')}`)
         const data = await res.json()
-        searchResult.innerHTML += `<hr>${await getFilmCardsHTML(data.Search)}`
+        searchResult.innerHTML += `<hr>${await getFilmsCardsHTML(data.Search.map(search => fetch(`${baseURL}&i=${search.imdbID}`)))}`
         searchResult.removeChild(searchResult.querySelector(`.sync-load-animation`))
         if (moreToBeLoaded) loadMore()
     })
 }
 
-async function getFilmCardsHTML(filmsArr) {
-    let html = ``
-    for (let index = 0; index < filmsArr.length; index++) {
-        const filmID = filmsArr[index].imdbID
-        const res = await fetch(`${path}&i=${filmID}`)
-        const data = await res.json()
-        const posterAvailable = data.Poster != "N/A" ? true : false
-        const plot = clipPlotText(data.Plot)
-        filmsID.push(filmID)
-        html += `
-            <div class="film-card" id="${filmID}">
-                ${posterAvailable ? `<img class="card-cover" src=${data.Poster} alt="${data.Title} film poster">` : cardFallbackCover}
-                <h2 class="card-title">
-                    ${data.Title} <span class="card-rating">${data.Ratings.length ? data.Ratings[0].Value.slice(0, data.Ratings[0].Value.indexOf("/")) : "N/A"}</span>
-                </h2>
-                <div class="card-group-info">
-                    <p class="card-runtime">${data.Runtime}</p>
-                    <p class="card-genre">${data.Genre}</p>
-                    <button class="btn card-watchlist" onclick="watchlistAddToOrRemoveFrom(event)" add-state=${localStorage.getItem(filmID) ? "removable" : "addable"}>Watchlist</button>
-                </div>
-                <p class="card-plot">${plot}</p>
-            </div>  <!-- end of film-card -->
-        `
-        
-        if (currentPage < pagesNumber && index === filmsArr.length-1) {
-            html += `<button class="btn load-more-btn">Load More</button>`
-            moreToBeLoaded = true
-        } else if (currentPage === pagesNumber && index === filmsArr.length-1) return html
-        else html += `<hr>` 
-    }
-    return html
+function getFilmsCardsHTML(fetchArr) {
+    return Promise.all(fetchArr)
+        .then(responses => Promise.all(responses.map(res => res.json())))
+        .then(pageFilmsData => pageFilmsData.map((filmData, index, pageFilmsData) => {
+            const filmID = filmData.imdbID
+            const length = pageFilmsData.length
+            const posterAvailable = filmData.Poster != "N/A" ? true : false
+            const plot = clipPlotText(filmData.Plot)
+            html = `
+                <div class="film-card" id="${filmID}">
+                    ${posterAvailable ? `<img class="card-cover" src=${filmData.Poster} alt="${filmData.Title} film poster">` : cardFallbackCover}
+                    <h2 class="card-title">
+                        ${filmData.Title} <span class="card-rating">${filmData.Ratings.length ? filmData.Ratings[0].Value.slice(0, filmData.Ratings[0].Value.indexOf("/")) : "N/A"}</span>
+                    </h2>
+                    <div class="card-group-info">
+                        <p class="card-runtime">${filmData.Runtime}</p>
+                        <p class="card-genre">${filmData.Genre}</p>
+                        <button class="btn card-watchlist" onclick="addToOrRemoveFromWatchlist(event)" add-state=${localStorage.getItem(filmID) ? "removable" : "addable"}>Watchlist</button>
+                    </div>
+                    <p class="card-plot">${plot}</p>
+                </div>  <!-- end of film-card -->
+            `
+            
+            if (currentPage < pagesNumber && index === length-1) {
+                html += `<button class="btn load-more-btn">Load More</button>`
+                moreToBeLoaded = true
+            } else if (currentPage === pagesNumber && index === length-1) return html
+            else html += `<hr>`
+            return html
+        }).join(``))
+        .catch(err => console.error(err))
 }
 
 function watchlistAddToOrRemoveFrom(event) {
