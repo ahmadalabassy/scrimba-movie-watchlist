@@ -28,9 +28,9 @@ const watchlistPlaceholder = `<div class="results-placeholder">
                                 <a class="placeholder-anchor" href="index.html">Let’s add some movies!</a>
                              </div>`
 const maxResultsPerFetchedPage = 10
+let savedWatchlist = JSON.parse(localStorage.getItem(`watchlist`))
 let storedFilmsCount = localStorage.getItem(`color-mode`) ? localStorage.length-1 : localStorage.length
-let pagesNumber, currentPage, filmCardsContent, currentInput,
-    filmsID, prevInput, loadMoreBtn, moreToBeLoaded
+let pagesNumber, currentPage, filmCardsContent, prevInput, loadMoreBtn, moreToBeLoaded, filmsID
 
 // Default color mode
 let colorMode = localStorage.getItem(`color-mode`)
@@ -45,6 +45,18 @@ document.querySelector(`.color-mode-switch`).addEventListener(`click`, () => {
     document.documentElement.setAttribute(`color-mode`, colorMode)
     localStorage.setItem(`color-mode`, colorMode)
 })
+
+/* for search page */
+if(searchInput) {
+    /* searchBtn click triggers fetch request by keyword, 10 results per page are returned if response Ok,
+    each result prompts another fetch by id for film info,
+    content added to searchResult */
+    searchBtn.addEventListener(`click`, () => initialLoad(searchInput.value.trim().toLowerCase().replace(/\s+/g, '+')))
+    // Enter key fired on non-empty searchInput values initiates click on searchBtn, or displays searchResultPlaceholder otherwise
+    searchInput.addEventListener("keypress", event => {
+        if (event.key === "Enter") searchBtn.click()
+    })
+}
 
 /* for watchlist page */
 if(watchlist) {
@@ -62,18 +74,6 @@ if(watchlist) {
             currentValue.innerHTML = `Remove`
         })
     }
-}
-
-/* for search page */
-if(searchInput) {
-    /* searchBtn click triggers fetch request by keyword, 10 results per page are returned if response Ok,
-    each result prompts another fetch by id for film info,
-    content added to searchResult */
-    searchBtn.addEventListener(`click`, () => initialLoad(searchInput.value.trim().toLowerCase().replace(/\s+/g, '+')))
-    // Enter key fired on non-empty searchInput values initiates click on searchBtn, or displays searchResultPlaceholder otherwise
-    searchInput.addEventListener("keypress", event => {
-        if (event.key === "Enter") searchBtn.click()
-    })
 }
 
 /* functions */
@@ -145,7 +145,7 @@ function getFilmsCardsHTML(fetchArr) {
         .catch(err => console.error(err))
 }
 
-function watchlistAddToOrRemoveFrom(event) {
+function addToOrRemoveFromWatchlist(event) {
     const cardWatchlistBtn = event.target
     const addState = cardWatchlistBtn.getAttribute(`add-state`)
     const filmCard = cardWatchlistBtn.parentNode.parentNode
@@ -155,7 +155,7 @@ function watchlistAddToOrRemoveFrom(event) {
         localStorage.setItem(id, filmCard.outerHTML.replace(/\\n\s+/g, ``)) //
     } else {
         cardWatchlistBtn.setAttribute(`add-state`, `addable`)
-        if (pageIdentifier === `search`) localStorage.removeItem(filmsID[id])
+        if (pageIdentifier === `search`) localStorage.removeItem(id)
         else {
             const nextHr = filmCard.nextElementSibling
             const prevHr = filmCard.previousElementSibling
