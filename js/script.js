@@ -88,7 +88,9 @@ async function initialLoad(currentInput) {
         if(data.Response === `False` || totalResults === 0) {
             if(data.Error && data.Error === `Too many results.`) {
                 searchResult.innerHTML = `<div class="results-placeholder">${syncLoadAnimation}</div>`
-                const data = (async() => await fetch(`${baseURL}?apikey=${apikey}&t=${currentInput}`))()
+                const res = await fetch(`${baseURL}?apikey=${apikey}&t=${currentInput}`)
+                const data = await res.json()
+                pagesNumber = 1
                 movies.push({
                     id: data.imdbID,
                     title: data.Title,
@@ -98,7 +100,6 @@ async function initialLoad(currentInput) {
                     genre: data.Genre,
                     plot: data.Plot
                 })
-                console.log(data)
                 searchResult.innerHTML = constructFilmCardHTML(movies[0], 0, 1)
             } else searchResult.innerHTML = `
                 <div class="no-results placeholder-txt contrast-boosted">Unable to find what you’re looking for. Please try another search.</div>
