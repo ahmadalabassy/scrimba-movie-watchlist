@@ -38,7 +38,7 @@ const watchlistPlaceholder = `
 `
 const savedMovies = JSON.parse(localStorage.getItem(`watchlist`)) || []
 let storedFilmsCount = savedMovies.length
-let pagesNumber, currentPage, movies, prevInput, moreToBeLoaded
+let maxResultsPerPage, pagesNumber, currentPage, movies, prevInput, moreToBeLoaded
 
 // Default color mode
 let colorMode = localStorage.getItem(`color-mode`)
@@ -87,6 +87,7 @@ async function initialLoad(currentInput) {
         currentPage = 1
         if(data.Response === `False` || totalResults === 0) {
             if(data.Error && data.Error === `Too many results.`) {
+                maxResultsPerPage = 1
                 pagesNumber = 1
                 searchResult.innerHTML = `<div class="results-placeholder">${syncLoadAnimation}</div>`
                 searchResult.innerHTML = await getFilmCardsHTML([fetch(`${baseURL}?apikey=${apikey}&t=${currentInput}`)])
@@ -95,6 +96,7 @@ async function initialLoad(currentInput) {
             `
         }
         else {
+            maxResultsPerPage = data.Search.length
             pagesNumber = Math.ceil(totalResults/data.Search.length)
             searchResult.innerHTML = `<div class="results-placeholder">${syncLoadAnimation}</div>`
             searchResult.innerHTML = await getFilmCardsHTML(data.Search.map(search => fetch(`${baseURL}?apikey=${apikey}&i=${search.imdbID}`)))
@@ -111,6 +113,7 @@ function loadMore() {
         loadMoreBtn.outerHTML = ``
         searchResult.innerHTML += syncLoadAnimation
         currentPage++
+        console.log(`Page ${currentPage} of ${pagesNumber}`)
         const res = await fetch(`${baseURL}?apikey=${apikey}&page=${currentPage}&s=${prevInput}`)
         const data = await res.json()
         searchResult.innerHTML += `
@@ -123,11 +126,12 @@ function loadMore() {
 }
 
 function getFilmCardsHTML(fetchArr) {
+    const indexAdjuster = (currentPage - 1) * maxResultsPerPage
     return Promise.all(fetchArr)
         .then(responses => Promise.all(responses.map(res => res.json())))
         .then(data => data.map(({imdbID, Title, Poster, Ratings, Runtime, Genre, Plot}, index, {length}) => (
             movies.push({id: imdbID, title: Title, poster: checkPoster(Poster), rating: checkRating(Ratings), runtime: Runtime, genre: Genre, plot: Plot}),
-            constructFilmCardHTML(movies[index], index, length)
+            constructFilmCardHTML(movies[index + indexAdjuster], index + indexAdjuster, length)
         )).join(``))
         .catch(err => console.error(err))
 }
