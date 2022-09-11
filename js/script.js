@@ -87,20 +87,9 @@ async function initialLoad(currentInput) {
         currentPage = 1
         if(data.Response === `False` || totalResults === 0) {
             if(data.Error && data.Error === `Too many results.`) {
-                searchResult.innerHTML = `<div class="results-placeholder">${syncLoadAnimation}</div>`
-                const res = await fetch(`${baseURL}?apikey=${apikey}&t=${currentInput}`)
-                const data = await res.json()
                 pagesNumber = 1
-                movies.push({
-                    id: data.imdbID,
-                    title: data.Title,
-                    poster: checkPoster(data.Poster),
-                    rating: checkRating(data.Ratings),
-                    runtime: data.Runtime,
-                    genre: data.Genre,
-                    plot: data.Plot
-                })
-                searchResult.innerHTML = constructFilmCardHTML(movies[0], 0, 1)
+                searchResult.innerHTML = `<div class="results-placeholder">${syncLoadAnimation}</div>`
+                searchResult.innerHTML = await getFilmCardsHTML([fetch(`${baseURL}?apikey=${apikey}&t=${currentInput}`)])
             } else searchResult.innerHTML = `
                 <div class="no-results placeholder-txt contrast-boosted">Unable to find what you’re looking for. Please try another search.</div>
             `
@@ -146,7 +135,7 @@ function getFilmCardsHTML(fetchArr) {
 function constructFilmCardHTML({id, title, poster, rating, runtime, genre, plot}, index, length) {
     let html = `
         <div class="film-card">
-            ${poster ? `<img class="card-cover" src=${poster} alt="${title} film poster">` : fallbackPoster}
+            <img class="card-cover" src=${poster} alt="${title} film poster">
             <h2 class="card-title">${title} <span class="card-rating">${rating}</span></h2>
             <div class="card-group-info">
                 <p class="card-runtime">${runtime}</p>
@@ -168,12 +157,12 @@ function constructFilmCardHTML({id, title, poster, rating, runtime, genre, plot}
 
 function addToOrRemoveFromWatchlist({target: button}, moviesIndex) {
     const addState = button.getAttribute(`add-state`)
-    if (addState === `addable`) {
+    if (addState === `addable`) { // adding movie to watchlist
         button.setAttribute(`add-state`, `removable`)
         savedMovies.push(movies[moviesIndex])
-    } else {
+    } else { // removing movie from watchlist
         button.setAttribute(`add-state`, `addable`)
-        const savedMoviesIndex = savedMovies.findIndex(movie => movie.id === moviesIndex.id)
+        const savedMoviesIndex = savedMovies.findIndex(movie => movie.id === moviesIndex)
         savedMovies.splice(savedMoviesIndex, 1) // start from index, remove one element
         if (pageIdentifier === `watchlist`) {
             const movieCard = button.parentElement.parentElement
@@ -220,8 +209,13 @@ function hideRemainingPlotText({target: readLess}) {
 }
 
 function addEventListeners() {
+    // adding click event listeners for "add to watchlist" buttons
     document.querySelectorAll(`.card-watchlist`).forEach((button, index) => 
         button.addEventListener(`click`, event => addToOrRemoveFromWatchlist(event, index))
+    )
+    // handling errors from movies' posters, displaying fallback poster instead
+    document.querySelectorAll(`.card-cover`).forEach(poster => 
+        poster.addEventListener(`error`, event => event.target.outerHTML = fallbackPoster)
     )
     moreToBeLoaded && loadMore()
 }

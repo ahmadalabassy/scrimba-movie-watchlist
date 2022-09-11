@@ -392,10 +392,6 @@ hr {
     display: block;
 }
 
-.fallback-poster {
-    background: url("../img/placeholder-poster.svg") center center no-repeat;
-}
-
 .card-watchlist,
 .placeholder-anchor {
     margin-left: 1.4rem;
