@@ -130,8 +130,8 @@ function getFilmCardsHTML(fetchArr) {
     return Promise.all(fetchArr)
         .then(responses => Promise.all(responses.map(res => res.json())))
         .then(data => data.map(({imdbID, Title, Poster, Ratings, Runtime, Genre, Plot}, index, {length}) => (
-            movies.push({id: imdbID, title: Title, poster: checkPoster(Poster), rating: checkRating(Ratings), runtime: Runtime, genre: Genre, plot: Plot}),
-            constructFilmCardHTML(movies[index + indexAdjuster], index + indexAdjuster, length)
+            movies.push({id: imdbID, title: Title, poster: Poster, rating: checkRating(Ratings), runtime: Runtime, genre: Genre, plot: Plot}),
+            constructFilmCardHTML(movies[index + indexAdjuster], index + indexAdjuster, length + indexAdjuster)
         )).join(``))
         .catch(err => console.error(err))
 }
@@ -226,8 +226,4 @@ function addEventListeners() {
 
 function checkRating(ratings) {
     return ratings.length ? ratings[0].Value.slice(0, ratings[0].Value.indexOf(`/`)) : `N/A`
-}
-
-function checkPoster(poster) {
-    return poster === `N/A` ? null : poster
 }
